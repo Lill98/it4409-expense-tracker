@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Biến môi trường — TUYỆT ĐỐI không commit (Lec 8, Lec 10)
+.env
+.env.local
+.env.production
+!.env.example
+
+# Build output
+dist/
+build/
+
+# Log
+*.log
+npm-debug.log*
+
+# Hệ điều hành / editor
+.DS_Store
+.idea/
+.vscode/
