@@ -6,7 +6,7 @@
 
 ## 1. Thông tin học viên
 
-| | |
+| Thông tin | Nội dung |
 |---|---|
 | **Họ tên** | Trần Tiến Quân |
 | **Mã số học viên** | 20242149M |
@@ -17,7 +17,7 @@
 
 ## 2. Liên kết
 
-| | |
+| Loại | Đường dẫn |
 |---|---|
 | **Source code** | https://github.com/Lill98/it4409-expense-tracker |
 | **Demo đã triển khai** | https://web.quanaibuilder.com |
@@ -28,7 +28,7 @@ Chi tiết cách triển khai ở **mục 8**.
 
 ## 3. Tài khoản demo
 
-| | |
+| Trường | Giá trị |
 |---|---|
 | **Email** | `demo@sis.hust.edu.vn` |
 | **Mật khẩu** | `Demo@12345` |
