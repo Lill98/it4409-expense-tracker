@@ -1,0 +1,89 @@
+# Deploy toàn bộ stack lên VM bằng một lệnh:
+#
+#   cp .env.example .env    # rồi điền giá trị thật
+#   docker compose up -d --build
+#   docker compose exec backend npm run seed    # tạo tài khoản demo
+#
+# Kiến trúc:  Internet → Cloudflare → cloudflared → Nginx → backend → mongo
+#
+# Điểm quan trọng: KHÔNG service nào publish cổng ra Internet. Cloudflare
+# Tunnel tạo kết nối đi RA từ trong VM, nên VM không cần mở cổng vào, không
+# cần IP public, không cần cấu hình firewall, không cần tự lo chứng chỉ TLS.
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    volumes:
+      # Named volume để dữ liệu sống qua `docker compose down` và restart VM.
+      # Chỉ mất khi chạy `docker compose down -v`.
+      - mongo-data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - app-network
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      # `mongo` là service name — Docker DNS tự phân giải trong mạng nội bộ.
+      # authSource=admin vì user được tạo ở database admin.
+      MONGO_URI: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo:27017/${MONGO_DB_NAME}?authSource=admin
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      CORS_ORIGINS: ${PUBLIC_URL}
+      # Số hop proxy trước backend: cloudflared → nginx = 2.
+      # Sai số này thì rate limiter tính nhầm IP client (xem README mục 9).
+      TRUST_PROXY: 2
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Rỗng = SPA gọi /api trên cùng origin, Nginx proxy sang backend.
+        # Nhờ vậy browser không bao giờ gửi request cross-origin → không CORS.
+        VITE_API_BASE_URL: ''
+    restart: unless-stopped
+    ports:
+      # Chỉ bind vào loopback của VM để `curl localhost:8080` gỡ lỗi được.
+      # KHÔNG phải 0.0.0.0 — cổng này không mở ra Internet.
+      - '127.0.0.1:8080:80'
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  cloudflared:
+    image: cloudflare/cloudflared:2024.12.2
+    restart: unless-stopped
+    # --no-autoupdate: image đã ghim version, để container không tự đổi
+    # binary giữa các lần restart.
+    command: tunnel --no-autoupdate run --token ${TUNNEL_TOKEN}
+    depends_on:
+      frontend:
+        condition: service_healthy
+    networks:
+      - app-network
+
+volumes:
+  mongo-data:
+
+networks:
+  app-network:
+    driver: bridge

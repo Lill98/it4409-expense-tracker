@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+README.md
+
+# Script chỉ dùng khi phát triển: hai file này import mongodb-memory-server,
+# là devDependency không có trong image production. Dockerfile chỉ copy
+# scripts/seed.js và scripts/seed-data.js.
+scripts/smoke-test.js
+scripts/dev-with-memory-db.js
