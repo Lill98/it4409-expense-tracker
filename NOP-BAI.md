@@ -1,9 +1,3 @@
-# ĐỀ THI CUỐI KỲ — IT4409 (20252)
-
-## Công nghệ Web và dịch vụ trực tuyến
-
----
-
 ## 1. Thông tin học viên
 
 | Thông tin | Nội dung |
